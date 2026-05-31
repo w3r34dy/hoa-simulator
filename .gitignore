@@ -1,4 +1,6 @@
 # Roblox binary place files are large and should usually be exported intentionally.
+*.rbxl
+*.rbxlx
 *.rbxl.lock
 *.rbxlx.lock
 
