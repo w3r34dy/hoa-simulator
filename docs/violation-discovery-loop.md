@@ -1,0 +1,134 @@
+# Violation Discovery Loop
+
+This note captures the first gameplay system we want to prove: players patrol a shared HOA neighborhood, find violations as they appear over time, call them out through an interaction, and earn rewards for serving the HOA.
+
+## Core Idea
+
+Players walk or drive around the HOA community looking for visible rule violations. The game continuously creates violations on houses, yards, vehicles, or neighborhood objects so patrollers always have something to discover.
+
+This is the first part of the larger HOA loop:
+
+```text
+Patrol neighborhood
+-> Discover violation
+-> Interact to call it out / write paperwork
+-> Earn rewards
+-> More violations appear over time
+```
+
+## Initial Violation Examples
+
+- Grass too tall
+- Trash cans left out
+- Wrong mailbox color
+- Unauthorized decorations
+- Unapproved shed
+- Parking violations
+- Political signs
+- Holiday decorations left up
+
+## Step 1 Scope
+
+For the first playable version, we should prove the mechanic with one or a few house assets.
+
+The system should be able to:
+
+- choose an eligible house or target object
+- apply a visible violation to it
+- let a player discover it through proximity, interaction, or inspection
+- reward the player for correctly calling it out
+- clear or resolve the violation
+- generate new violations over time
+
+The first visual implementation can be simple. For example, changing the color of an existing part on the house is enough to prove the code is working.
+
+The first reward loop can be equally simple:
+
+```text
+Find visible violation
+-> interact with the target
+-> short paperwork/citation action
+-> receive money, XP, or reputation
+```
+
+## Design Goals
+
+- Violations should be easy to add later without rewriting the whole system.
+- Houses and targets should be configurable from Studio where possible.
+- The map should be able to grow without hardcoding every house into scripts.
+- Multiple players should be able to patrol the same neighborhood.
+- The system should avoid giving duplicate rewards for the same violation.
+- Visible changes should make the violation understandable without needing complex UI at first.
+- Some violations should be worth more than others.
+- Players should be able to learn active HOA policies from a menu.
+- Players should be able to read current policies from a menu so they can figure out what counts as a violation.
+
+## Likely Technical Direction
+
+Use a data-driven violation system:
+
+```text
+Violation definition
+-> target type
+-> visual change
+-> reward values
+-> spawn rules
+-> policy requirements
+```
+
+Use Studio tags, attributes, or naming conventions on map objects:
+
+```text
+House model
+Mailbox part
+Grass part
+Trash can model
+Parking spot
+Decoration point
+```
+
+Then the server can find eligible targets and apply violations without depending on one exact map layout.
+
+## Policy Menu
+
+Players should have access to a read-only menu that explains the current HOA policies. This is part of Step 1 because players need a way to learn what counts as a violation.
+
+Example policy entries:
+
+```text
+Mailbox colors allowed: black, white, gray
+Grass height limit: short
+Trash cans must be hidden after pickup
+Holiday decorations expire after event season
+Political signs are restricted
+```
+
+For Step 1, policies do not need to change during the server. The menu can simply display the current rules from the same data used by the violation system.
+
+The important rule is that policy changes must be readable in the menu before players are punished or expected to enforce them.
+
+Policy-changing mechanics, board votes, and server-specific rule changes are later features. When added, they should update the same policy data that the violation system and menu already use.
+
+## Multiplayer Notes
+
+The neighborhood is shared, but rewards can be individual.
+
+Possible rule:
+
+```text
+First player to discover a violation gets discovery credit.
+Other jobs can still interact with the case later.
+```
+
+For Step 1, we only need discovery credit and basic rewards. Later systems can add citations, appeals, resident reactions, job roles, and case resolution.
+
+## Open Questions
+
+- What does the first house asset contain?
+- Which part should be the first violation target?
+- Should violations be obvious visually, subtle, or both depending on difficulty?
+- Should players need a tool, proximity prompt, camera, or simple interaction key to inspect?
+- What rewards should each first violation type pay?
+- How long should a violation remain active before changing or expiring?
+- Should spawn timing be global, per house, or per neighborhood area?
+- What policy information should be visible in the first read-only policy menu?
