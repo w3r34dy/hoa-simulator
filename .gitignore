@@ -1,0 +1,12 @@
+# Roblox binary place files are large and should usually be exported intentionally.
+*.rbxl.lock
+*.rbxlx.lock
+
+# Rojo and tooling output
+sourcemap.json
+build/
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
