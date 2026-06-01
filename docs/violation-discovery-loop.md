@@ -51,6 +51,37 @@ Find visible violation
 -> receive money, XP, or reputation
 ```
 
+## First Mailbox Prototype Setup
+
+The first active violation is `WrongMailboxColor`. It uses Studio attributes on mailbox models and on the parts of each mailbox that should change color.
+
+```text
+Mailbox model:
+HOAMailbox = true
+
+Color-changing mailbox parts:
+HOAMailboxColorPart = true
+```
+
+Each mailbox can have multiple color-changing parts. The handler will recolor every descendant part marked with `HOAMailboxColorPart = true`.
+
+Configured violation ids:
+
+```text
+GrassTooTall
+TrashCansOut
+WrongMailboxColor
+UnauthorizedDecorations
+UnapprovedShed
+ParkingViolation
+PoliticalSign
+HolidayDecorationsExpired
+```
+
+For now, blue mailboxes are banned. When the server starts, mailbox targets are assigned random allowed colors. When the server activates a `WrongMailboxColor` violation, it changes one mailbox to a banned color and adds a `ProximityPrompt` named `HOAInspectionPrompt`. A player can interact with the prompt to write the citation, earn rewards, and clear the violation.
+
+When the mailbox violation is resolved, the handler repaints the mailbox to an allowed color. Later handlers can use their own setup, such as showing tall grass, moving trash cans, toggling decoration models, or spawning signs.
+
 ## Design Goals
 
 - Violations should be easy to add later without rewriting the whole system.
