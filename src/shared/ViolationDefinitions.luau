@@ -7,6 +7,8 @@ export type ViolationDefinition = {
 	BaseReward: number,
 	XP: number,
 	HandlerId: string,
+	TargetActive: number,
+	Availability: "Always" | "OutsideTrashWindow" | "Unavailable",
 }
 
 local ViolationDefinitions: { [string]: ViolationDefinition } = {
@@ -17,6 +19,8 @@ local ViolationDefinitions: { [string]: ViolationDefinition } = {
 		BaseReward = 25,
 		XP = 10,
 		HandlerId = "GrassTooTall",
+		TargetActive = 0,
+		Availability = "Unavailable",
 	},
 
 	TrashCansOut = {
@@ -26,6 +30,8 @@ local ViolationDefinitions: { [string]: ViolationDefinition } = {
 		BaseReward = 20,
 		XP = 8,
 		HandlerId = "TrashCansOut",
+		TargetActive = 3,
+		Availability = "OutsideTrashWindow",
 	},
 
 	WrongMailboxColor = {
@@ -35,6 +41,8 @@ local ViolationDefinitions: { [string]: ViolationDefinition } = {
 		BaseReward = 30,
 		XP = 12,
 		HandlerId = "MailboxColor",
+		TargetActive = 4,
+		Availability = "Always",
 	},
 
 	UnauthorizedDecorations = {
@@ -44,6 +52,8 @@ local ViolationDefinitions: { [string]: ViolationDefinition } = {
 		BaseReward = 35,
 		XP = 14,
 		HandlerId = "UnauthorizedDecorations",
+		TargetActive = 0,
+		Availability = "Unavailable",
 	},
 
 	UnapprovedShed = {
@@ -53,6 +63,8 @@ local ViolationDefinitions: { [string]: ViolationDefinition } = {
 		BaseReward = 50,
 		XP = 20,
 		HandlerId = "UnapprovedShed",
+		TargetActive = 0,
+		Availability = "Unavailable",
 	},
 
 	ParkingViolation = {
@@ -62,6 +74,8 @@ local ViolationDefinitions: { [string]: ViolationDefinition } = {
 		BaseReward = 40,
 		XP = 16,
 		HandlerId = "ParkingViolation",
+		TargetActive = 0,
+		Availability = "Unavailable",
 	},
 
 	PoliticalSign = {
@@ -71,6 +85,8 @@ local ViolationDefinitions: { [string]: ViolationDefinition } = {
 		BaseReward = 30,
 		XP = 12,
 		HandlerId = "PoliticalSign",
+		TargetActive = 0,
+		Availability = "Unavailable",
 	},
 
 	HolidayDecorationsExpired = {
@@ -80,6 +96,8 @@ local ViolationDefinitions: { [string]: ViolationDefinition } = {
 		BaseReward = 35,
 		XP = 14,
 		HandlerId = "HolidayDecorationsExpired",
+		TargetActive = 0,
+		Availability = "Unavailable",
 	},
 }
 

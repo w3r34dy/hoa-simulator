@@ -82,6 +82,50 @@ For now, blue mailboxes are banned. When the server starts, mailbox targets are 
 
 When the mailbox violation is resolved, the handler repaints the mailbox to an allowed color. Later handlers can use their own setup, such as showing tall grass, moving trash cans, toggling decoration models, or spawning signs.
 
+## Time and Spawn Quotas
+
+The server runs an accelerated HOA calendar through `TimeService`:
+
+```text
+1 in-game day = 5 real minutes
+1 in-game week = 35 real minutes
+Day phases = Morning, Afternoon, Evening, Night
+```
+
+The violation system now maintains per-violation quotas instead of picking one global random violation. Each definition has:
+
+```text
+TargetActive
+Availability
+```
+
+Current setup:
+
+```text
+WrongMailboxColor: keep 4 active when targets exist
+TrashCansOut: keep 3 active only outside the trash window
+GrassTooTall: unavailable for now
+```
+
+Trash cans use a scheduled visibility window:
+
+```text
+Tuesday Evening through Thursday Morning:
+all trash cans are visible, old trash violations are cleared, and trash citations cannot spawn
+
+Thursday Afternoon until the next trash window:
+inactive cans are stored, and the quota manager can keep TrashCansOut violations active
+```
+
+Studio trash can setup:
+
+```text
+Trash can model or part:
+HOATrashCan = true
+```
+
+When a trash citation is resolved, that can is stored. The quota manager may later expose another stored can as a fresh `TrashCansOut` violation, creating the illusion that another household left cans out after pickup.
+
 ## Design Goals
 
 - Violations should be easy to add later without rewriting the whole system.

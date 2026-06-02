@@ -3,13 +3,16 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local PlayerStatsService = require(script.Parent.PlayerStatsService)
+local TimeService = require(script.Parent.TimeService)
 local ViolationDefinitions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ViolationDefinitions"))
 
+local GrassTooTall = require(script.Parent.Parent.violationHandlers.GrassTooTall)
 local MailboxColor = require(script.Parent.Parent.violationHandlers.MailboxColor)
+local TrashCansOut = require(script.Parent.Parent.violationHandlers.TrashCansOut)
 
 local PROMPT_NAME = "HOAInspectionPrompt"
 local RESPAWN_SECONDS = 12
-local MAX_ACTIVE_VIOLATIONS = 4
+local MAX_ACTIVE_VIOLATIONS = 24
 
 type ActiveViolation = {
 	Id: string,
@@ -23,12 +26,16 @@ type ViolationHandler = {
 	Initialize: (() -> ())?,
 	GetAvailableTargets: () -> { Instance },
 	Create: (target: Instance) -> ActiveViolation?,
+	ShowAllCans: (() -> ())?,
+	StoreInactiveCans: (() -> ())?,
 }
 
 local ViolationService = {}
 
 local handlers: { [string]: ViolationHandler } = {
+	GrassTooTall = GrassTooTall,
 	MailboxColor = MailboxColor,
+	TrashCansOut = TrashCansOut,
 }
 
 local activeViolations: { [Instance]: ActiveViolation } = {}
@@ -48,21 +55,30 @@ local function countActiveViolations(): number
 	return count
 end
 
-local function getSpawnableViolationIds(): { string }
-	local ids = {}
+local function countActiveViolationsById(id: string): number
+	local count = 0
 
-	for id, definition in ViolationDefinitions do
-		local handler = handlers[definition.HandlerId]
-		if handler and #handler.GetAvailableTargets() > 0 then
-			table.insert(ids, id)
+	for target, activeViolation in activeViolations do
+		if not target.Parent then
+			activeViolations[target] = nil
+		elseif activeViolation.Id == id then
+			count += 1
 		end
 	end
 
-	return ids
+	return count
 end
 
-local function shouldSpawnViolation(): boolean
-	return countActiveViolations() < MAX_ACTIVE_VIOLATIONS and #getSpawnableViolationIds() > 0
+local function isDefinitionAvailable(definition: ViolationDefinitions.ViolationDefinition, context: TimeService.TimeContext): boolean
+	if definition.Availability == "Unavailable" then
+		return false
+	end
+
+	if definition.Availability == "OutsideTrashWindow" then
+		return not context.IsTrashWindow
+	end
+
+	return true
 end
 
 local function removePrompt(activeViolation: ActiveViolation)
@@ -70,6 +86,22 @@ local function removePrompt(activeViolation: ActiveViolation)
 	if prompt then
 		prompt:Destroy()
 		activeViolation.Prompt = nil
+	end
+end
+
+local function clearViolationsById(id: string)
+	local toClear = {}
+
+	for target, activeViolation in activeViolations do
+		if activeViolation.Id == id then
+			table.insert(toClear, activeViolation)
+			activeViolations[target] = nil
+		end
+	end
+
+	for _, activeViolation in toClear do
+		removePrompt(activeViolation)
+		activeViolation.Cleanup()
 	end
 end
 
@@ -146,14 +178,47 @@ local function spawnViolation(id: string): boolean
 	return true
 end
 
-local function spawnRandomViolation()
-	local ids = getSpawnableViolationIds()
-	if #ids == 0 then
+local function maintainViolationQuotas()
+	local context = TimeService.GetContext()
+
+	for id, definition in ViolationDefinitions do
+		if countActiveViolations() >= MAX_ACTIVE_VIOLATIONS then
+			return
+		end
+
+		if definition.TargetActive > 0 and isDefinitionAvailable(definition, context) then
+			local handler = handlers[definition.HandlerId]
+			while handler
+				and countActiveViolations() < MAX_ACTIVE_VIOLATIONS
+				and countActiveViolationsById(id) < definition.TargetActive
+			do
+				if #handler.GetAvailableTargets() == 0 or not spawnViolation(id) then
+					break
+				end
+			end
+		end
+	end
+end
+
+local function syncTrashCansForTime(context: TimeService.TimeContext, previousContext: TimeService.TimeContext?)
+	local trashHandler = handlers.TrashCansOut
+	if not trashHandler then
 		return
 	end
 
-	local id = ids[rng:NextInteger(1, #ids)]
-	spawnViolation(id)
+	local wasTrashWindow = previousContext and previousContext.IsTrashWindow or false
+
+	if context.IsTrashWindow and not wasTrashWindow then
+		clearViolationsById("TrashCansOut")
+
+		if trashHandler.ShowAllCans then
+			trashHandler.ShowAllCans()
+		end
+	elseif not context.IsTrashWindow and wasTrashWindow then
+		if trashHandler.StoreInactiveCans then
+			trashHandler.StoreInactiveCans()
+		end
+	end
 end
 
 function ViolationService.Start()
@@ -163,11 +228,15 @@ function ViolationService.Start()
 		end
 	end
 
+	syncTrashCansForTime(TimeService.GetContext(), nil)
+
+	TimeService.PhaseChanged:Connect(function(context: TimeService.TimeContext, previousContext: TimeService.TimeContext?)
+		syncTrashCansForTime(context, previousContext)
+	end)
+
 	task.spawn(function()
 		while true do
-			if shouldSpawnViolation() then
-				spawnRandomViolation()
-			end
+			maintainViolationQuotas()
 
 			task.wait(RESPAWN_SECONDS)
 		end
