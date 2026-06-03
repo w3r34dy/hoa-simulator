@@ -11,21 +11,20 @@ local player = Players.LocalPlayer
 
 print(("[Client] %s v%s initialized"):format(GameConfig.Name, GameConfig.Version))
 
+require(script.devTests.UpgradeMenuTest).Start()
+
 local playerGui = player:WaitForChild("PlayerGui")
 
-local screenGui = playerGui:WaitForChild("HOATimeHud")
-local dayText = screenGui:FindFirstChild("DayLabel", true)
+local screenGui = playerGui:WaitForChild("TimeofDay")
+local dayBox = screenGui:WaitForChild("DayBox")
+local dayText = dayBox:WaitForChild("TextLabel")
 
-if not dayText then
-	dayText = screenGui:FindFirstChild("DayText", true) or screenGui:FindFirstChild("DayTextBox", true)
-end
-
-if not dayText or not (dayText:IsA("TextLabel") or dayText:IsA("TextBox")) then
-	error("[HOATimeHud] Add a TextLabel or TextBox named DayLabel under HOATimeHud.")
+if not dayText:IsA("TextLabel") then
+	error("[TimeofDay] Add a TextLabel named TextLabel under TimeofDay.DayBox.")
 end
 
 local function updateTimeHud()
-	(dayText :: any).Text = dayValue.Value
+	dayText.Text = dayValue.Value
 end
 
 dayValue.Changed:Connect(updateTimeHud)

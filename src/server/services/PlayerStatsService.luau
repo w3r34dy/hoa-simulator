@@ -2,6 +2,8 @@
 
 local Players = game:GetService("Players")
 
+local UpgradeService = require(script.Parent.UpgradeService)
+
 local PlayerStatsService = {}
 
 local function createStat(parent: Instance, name: string, value: number): IntValue
@@ -42,7 +44,7 @@ function PlayerStatsService.AwardCitation(player: Player, money: number, xp: num
 	local citationsStat = leaderstats:FindFirstChild("Citations")
 
 	if moneyStat and moneyStat:IsA("IntValue") then
-		moneyStat.Value += money
+		moneyStat.Value += UpgradeService.GetCitationMoney(player, money)
 	end
 
 	if xpStat and xpStat:IsA("IntValue") then

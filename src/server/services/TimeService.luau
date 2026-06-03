@@ -19,13 +19,13 @@ local PHASES_PER_DAY = 4
 local SECONDS_PER_PHASE = SECONDS_PER_DAY / PHASES_PER_DAY
 
 local DAYS: { DayName } = {
-	"Sunday",
 	"Monday",
 	"Tuesday",
 	"Wednesday",
 	"Thursday",
 	"Friday",
 	"Saturday",
+	"Sunday",
 }
 
 local PHASES: { DayPhase } = {
@@ -42,9 +42,9 @@ local PHASE_CLOCK_TIMES = {
 	Night = 22,
 }
 
-local TRASH_WINDOW_START_DAY_INDEX = 3 -- Tuesday
+local TRASH_WINDOW_START_DAY_INDEX = 2 -- Tuesday
 local TRASH_WINDOW_START_PHASE_INDEX = 3 -- Evening
-local TRASH_WINDOW_END_DAY_INDEX = 5 -- Thursday
+local TRASH_WINDOW_END_DAY_INDEX = 4 -- Thursday
 local TRASH_WINDOW_END_PHASE_INDEX = 2 -- Afternoon
 
 local TimeService = {}

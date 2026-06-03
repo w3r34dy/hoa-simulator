@@ -12,6 +12,12 @@ Rojo project for the Roblox game **HOASimulator**.
 
 ## Common Commands
 
+Rojo is pinned in `aftman.toml`:
+
+```powershell
+aftman install
+```
+
 ```powershell
 rojo serve
 ```
@@ -29,6 +35,14 @@ rojo sourcemap default.project.json -o sourcemap.json
 ```
 
 Generates a sourcemap for editor tooling.
+
+The same commands are available through npm:
+
+```powershell
+npm run rojo:serve
+npm run rojo:build
+npm run rojo:sourcemap
+```
 
 ## Notes
 

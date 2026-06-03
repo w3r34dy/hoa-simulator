@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "rojo:serve": "rojo serve default.project.json",
+    "rojo:build": "rojo build default.project.json -o build/HOASimulator.rbxl",
+    "rojo:sourcemap": "rojo sourcemap default.project.json -o sourcemap.json"
+  },
+  "devDependencies": {}
+}

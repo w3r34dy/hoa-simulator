@@ -45,6 +45,17 @@ local ViolationDefinitions: { [string]: ViolationDefinition } = {
 		Availability = "Always",
 	},
 
+	ParkingOnLawn = {
+		Id = "ParkingOnLawn",
+		DisplayName = "Parking On Lawn",
+		PolicyText = "Vehicles must be parked on approved driveways or street parking areas, not lawns.",
+		BaseReward = 35,
+		XP = 14,
+		HandlerId = "ParkingOnLawn",
+		TargetActive = 1,
+		Availability = "Always",
+	},
+
 	UnauthorizedDecorations = {
 		Id = "UnauthorizedDecorations",
 		DisplayName = "Unauthorized Decorations",

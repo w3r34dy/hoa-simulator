@@ -8,6 +8,7 @@ local ViolationDefinitions = require(ReplicatedStorage:WaitForChild("Shared"):Wa
 
 local GrassTooTall = require(script.Parent.Parent.violationHandlers.GrassTooTall)
 local MailboxColor = require(script.Parent.Parent.violationHandlers.MailboxColor)
+local ParkingOnLawn = require(script.Parent.Parent.violationHandlers.ParkingOnLawn)
 local TrashCansOut = require(script.Parent.Parent.violationHandlers.TrashCansOut)
 
 local PROMPT_NAME = "HOAInspectionPrompt"
@@ -35,6 +36,7 @@ local ViolationService = {}
 local handlers: { [string]: ViolationHandler } = {
 	GrassTooTall = GrassTooTall,
 	MailboxColor = MailboxColor,
+	ParkingOnLawn = ParkingOnLawn,
 	TrashCansOut = TrashCansOut,
 }
 
