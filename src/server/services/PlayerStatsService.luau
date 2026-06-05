@@ -20,7 +20,7 @@ local function setupPlayer(player: Player)
 	leaderstats.Name = "leaderstats"
 	leaderstats.Parent = player
 
-	createStat(leaderstats, "Money", 0)
+	createStat(leaderstats, "Money", 30000)
 	createStat(leaderstats, "XP", 0)
 	createStat(leaderstats, "Citations", 0)
 end
@@ -48,7 +48,7 @@ function PlayerStatsService.AwardCitation(player: Player, money: number, xp: num
 	end
 
 	if xpStat and xpStat:IsA("IntValue") then
-		xpStat.Value += xp
+		xpStat.Value += UpgradeService.GetCitationXP(player, xp)
 	end
 
 	if citationsStat and citationsStat:IsA("IntValue") then

@@ -4,8 +4,11 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local UpgradeDefinitions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("UpgradeDefinitions"))
+local ViolationDefinitions = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ViolationDefinitions"))
 
 local DEFAULT_WALK_SPEED = 16
+local PASSIVE_CITATION_SECONDS = 30
+local INTEREST_SECONDS = 30
 local REMOTES_FOLDER_NAME = "Remotes"
 local PURCHASE_REMOTE_NAME = "PurchaseUpgrade"
 
@@ -13,6 +16,8 @@ local UpgradeService = {}
 
 local playerUpgrades: { [Player]: { [UpgradeDefinitions.UpgradeCategory]: number } } = {}
 local purchaseUpgradeRemote: RemoteFunction? = nil
+local passiveCitationRng = Random.new()
+local moneyRng = Random.new()
 
 local function getLeaderstat(player: Player, statName: string): IntValue?
 	local leaderstats = player:FindFirstChild("leaderstats")
@@ -92,6 +97,91 @@ local function getDefinitionForTier(category: UpgradeDefinitions.UpgradeCategory
 	return nil
 end
 
+local function getAvailableCitationRewards(): { number }
+	local rewards = {}
+
+	for _, definition in ViolationDefinitions do
+		if definition.Availability ~= "Unavailable" then
+			table.insert(rewards, definition.BaseReward)
+		end
+	end
+
+	return rewards
+end
+
+local function getBoardFavorBonus(player: Player): number
+	local boardFavorTier = getCategoryTier(player, "BoardFavor")
+	local boardFavorDefinition = getDefinitionForTier("BoardFavor", boardFavorTier)
+	if boardFavorDefinition
+		and boardFavorDefinition.BonusChance
+		and boardFavorDefinition.BonusMoney
+		and math.random() < boardFavorDefinition.BonusChance
+	then
+		return boardFavorDefinition.BonusMoney
+	end
+
+	return 0
+end
+
+local function getTierDefinition(player: Player, category: UpgradeDefinitions.UpgradeCategory): UpgradeDefinitions.UpgradeDefinition?
+	return getDefinitionForTier(category, getCategoryTier(player, category))
+end
+
+local function getCitationCount(player: Player): number
+	local leaderstats = player:FindFirstChild("leaderstats")
+	local citations = leaderstats and leaderstats:FindFirstChild("Citations")
+	if citations and citations:IsA("IntValue") then
+		return citations.Value
+	end
+
+	return 0
+end
+
+local function awardEconomistInterest(player: Player)
+	local definition = getTierDefinition(player, "Economist")
+	if not definition or not definition.InterestPercent then
+		return
+	end
+
+	local money = getLeaderstat(player, "Money")
+	if not money or money.Value <= 0 then
+		return
+	end
+
+	money.Value += math.max(1, math.floor((money.Value * definition.InterestPercent) + 0.5))
+end
+
+local function awardPassiveCitationMoney(player: Player)
+	local gogglesTier = getCategoryTier(player, "CitationGoggles")
+	local gogglesDefinition = getDefinitionForTier("CitationGoggles", gogglesTier)
+	if not gogglesDefinition or not gogglesDefinition.PassiveCitationAwards then
+		return
+	end
+
+	local leaderstats = player:FindFirstChild("leaderstats")
+	local money = leaderstats and leaderstats:FindFirstChild("Money")
+	if not money or not money:IsA("IntValue") then
+		return
+	end
+
+	local rewards = getAvailableCitationRewards()
+	if #rewards == 0 then
+		return
+	end
+
+	local totalMoney = 0
+	for _ = 1, gogglesDefinition.PassiveCitationAwards do
+		local reward = rewards[passiveCitationRng:NextInteger(1, #rewards)]
+		totalMoney += reward
+
+		if gogglesDefinition.PassiveUsesBoardFavor then
+			totalMoney += getBoardFavorBonus(player)
+		end
+	end
+
+	money.Value += totalMoney
+end
+
 local function applyMotorLegs(player: Player)
 	local tier = getCategoryTier(player, "MotorLegs")
 	local definition = getDefinitionForTier("MotorLegs", tier)
@@ -113,11 +203,29 @@ local function setupPlayer(player: Player)
 		Camera = 0,
 		MotorLegs = 0,
 		BoardFavor = 0,
+		CitationGoggles = 0,
+		EagleEyes = 0,
+		ReputationBadge = 0,
+		PolicyHandbook = 0,
+		Negotiator = 0,
+		Economist = 0,
+		Gambler = 0,
+		GoldenFavor = 0,
+		SightSeeing = 0,
 	}
 
 	player:SetAttribute("CameraTier", 0)
 	player:SetAttribute("MotorLegsTier", 0)
 	player:SetAttribute("BoardFavorTier", 0)
+	player:SetAttribute("CitationGogglesTier", 0)
+	player:SetAttribute("EagleEyesTier", 0)
+	player:SetAttribute("ReputationBadgeTier", 0)
+	player:SetAttribute("PolicyHandbookTier", 0)
+	player:SetAttribute("NegotiatorTier", 0)
+	player:SetAttribute("EconomistTier", 0)
+	player:SetAttribute("GamblerTier", 0)
+	player:SetAttribute("GoldenFavorTier", 0)
+	player:SetAttribute("SightSeeingTier", 0)
 
 	player.CharacterAdded:Connect(function()
 		applyMotorLegs(player)
@@ -128,19 +236,61 @@ function UpgradeService.GetCitationMoney(player: Player, baseMoney: number): num
 	local cameraTier = getCategoryTier(player, "Camera")
 	local cameraDefinition = getDefinitionForTier("Camera", cameraTier)
 	local multiplier = if cameraDefinition and cameraDefinition.MoneyMultiplier then cameraDefinition.MoneyMultiplier else 1
-	local totalMoney = math.floor((baseMoney * multiplier) + 0.5)
+	local cameraMoney = math.floor((baseMoney * multiplier) + 0.5)
+	local boardFavorBonus = getBoardFavorBonus(player)
 
-	local boardFavorTier = getCategoryTier(player, "BoardFavor")
-	local boardFavorDefinition = getDefinitionForTier("BoardFavor", boardFavorTier)
-	if boardFavorDefinition
-		and boardFavorDefinition.BonusChance
-		and boardFavorDefinition.BonusMoney
-		and math.random() < boardFavorDefinition.BonusChance
+	local negotiatorDefinition = getTierDefinition(player, "Negotiator")
+	if negotiatorDefinition and negotiatorDefinition.NegotiatorChance and moneyRng:NextNumber() < negotiatorDefinition.NegotiatorChance then
+		if moneyRng:NextInteger(1, 2) == 1 then
+			cameraMoney *= 2
+		elseif boardFavorBonus > 0 then
+			boardFavorBonus *= 5
+		end
+	end
+
+	local totalMoney = cameraMoney + boardFavorBonus
+
+	local goldenFavorDefinition = getTierDefinition(player, "GoldenFavor")
+	if goldenFavorDefinition
+		and goldenFavorDefinition.GoldenFavorChance
+		and moneyRng:NextNumber() < goldenFavorDefinition.GoldenFavorChance
 	then
-		totalMoney += boardFavorDefinition.BonusMoney
+		totalMoney += math.floor((getCitationCount(player) * 0.1) + 0.5)
 	end
 
 	return totalMoney
+end
+
+function UpgradeService.GetCitationXP(player: Player, baseXP: number): number
+	local badgeTier = getCategoryTier(player, "ReputationBadge")
+	local badgeDefinition = getDefinitionForTier("ReputationBadge", badgeTier)
+	local multiplier = if badgeDefinition and badgeDefinition.XPMultiplier then badgeDefinition.XPMultiplier else 1
+
+	return math.floor((baseXP * multiplier) + 0.5)
+end
+
+function UpgradeService.GetEagleEyeSettings(player: Player): (number, number, boolean)
+	local eagleEyesTier = getCategoryTier(player, "EagleEyes")
+	local eagleEyesDefinition = getDefinitionForTier("EagleEyes", eagleEyesTier)
+	if not eagleEyesDefinition then
+		return 0, 0, false
+	end
+
+	return eagleEyesDefinition.HighlightCount or 0,
+		eagleEyesDefinition.HighlightDistance or 0,
+		eagleEyesDefinition.CanFocusCitation == true
+end
+
+function UpgradeService.GetPolicyUnlockCount(player: Player): number
+	local definition = getTierDefinition(player, "PolicyHandbook")
+	return if definition and definition.PolicyUnlockCount then definition.PolicyUnlockCount else 0
+end
+
+function UpgradeService.GetPromptActivationDistance(player: Player, baseDistance: number): number
+	local definition = getTierDefinition(player, "SightSeeing")
+	local extraDistance = if definition and definition.SightSeeingExtraDistance then definition.SightSeeingExtraDistance else 0
+
+	return baseDistance + extraDistance
 end
 
 function UpgradeService.PurchaseUpgrade(player: Player, upgradeId: string): (boolean, string)
@@ -154,16 +304,17 @@ function UpgradeService.PurchaseUpgrade(player: Player, upgradeId: string): (boo
 		return false, "WrongTier"
 	end
 
-	local money = getLeaderstat(player, "Money")
-	if not money then
-		return false, "MissingMoneyStat"
+	local currency = definition.CostCurrency or "Money"
+	local stat = getLeaderstat(player, currency)
+	if not stat then
+		return false, "Missing" .. currency .. "Stat"
 	end
 
-	if money.Value < definition.Cost then
-		return false, "NotEnoughMoney"
+	if stat.Value < definition.Cost then
+		return false, "NotEnough" .. currency
 	end
 
-	money.Value -= definition.Cost
+	stat.Value -= definition.Cost
 	setCategoryTier(player, definition.Category, definition.Tier)
 
 	if definition.Category == "MotorLegs" then
@@ -192,6 +343,26 @@ function UpgradeService.Start()
 	Players.PlayerAdded:Connect(setupPlayer)
 	Players.PlayerRemoving:Connect(function(player)
 		playerUpgrades[player] = nil
+	end)
+
+	task.spawn(function()
+		while true do
+			task.wait(PASSIVE_CITATION_SECONDS)
+
+			for _, player in Players:GetPlayers() do
+				awardPassiveCitationMoney(player)
+			end
+		end
+	end)
+
+	task.spawn(function()
+		while true do
+			task.wait(INTEREST_SECONDS)
+
+			for _, player in Players:GetPlayers() do
+				awardEconomistInterest(player)
+			end
+		end
 	end)
 end
 
